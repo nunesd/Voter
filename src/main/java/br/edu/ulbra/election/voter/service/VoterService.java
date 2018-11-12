@@ -10,10 +10,14 @@ import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.discovery.event.InstanceRegisteredEvent;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Type;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -42,8 +46,11 @@ public class VoterService {
 
     public VoterOutput create(VoterInput voterInput) {
         validateInput(voterInput, false);
+        
         Voter voter = modelMapper.map(voterInput, Voter.class);
-        voter.setPassword(passwordEncoder.encode(voter.getPassword()));
+        
+        voter.setPassword(Voter.getHashPassword(voter.getPassword()));
+
         voter = voterRepository.save(voter);
         return modelMapper.map(voter, VoterOutput.class);
     }
@@ -66,6 +73,14 @@ public class VoterService {
             throw new GenericOutputException(MESSAGE_INVALID_ID);
         }
         validateInput(voterInput, true);
+        
+        List<VoterOutput> allVotters = this.getAll();
+        
+        for(VoterOutput vtOut : allVotters) {        	
+        	if(vtOut.getEmail().contentEquals(voterInput.getEmail()) && !(vtOut.getId().equals(voterId))) {
+        		throw new GenericOutputException("E-mail inserido já existe, tente novamente inserindo um e-mail diferente");
+        	}
+        }
 
         Voter voter = voterRepository.findById(voterId).orElse(null);
         if (voter == null){
@@ -97,19 +112,40 @@ public class VoterService {
     }
 
     private void validateInput(VoterInput voterInput, boolean isUpdate){
+        List<VoterOutput> allVotters = this.getAll();
+        
+        if(!isUpdate) {
+            for(VoterOutput vtOut : allVotters) {        	
+            	if(vtOut.getEmail().contentEquals(voterInput.getEmail())) {
+            		throw new GenericOutputException("E-mail inserido já existe, tente novamente inserindo um e-mail diferente");
+            	}
+            }	
+        }
+        
+        Integer maxName = voterInput.getName().length();
+        Integer nM = voterInput.getName().split(" ").length;
+        
+        if(maxName < 5) {
+        	throw new GenericOutputException("Nome deve ter no mínimo cinco letras.");
+        }
+        
+        if(nM < 2) {
+        	throw new GenericOutputException("Nome deve ter no mínimo um sobrenome.");
+        }
+        
         if (StringUtils.isBlank(voterInput.getEmail())){
-            throw new GenericOutputException("Invalid email");
+            throw new GenericOutputException("Em-mail inválido");
         }
         if (StringUtils.isBlank(voterInput.getName())){
-            throw new GenericOutputException("Invalid name");
+            throw new GenericOutputException("Nome Inválido");
         }
         if (!StringUtils.isBlank(voterInput.getPassword())){
             if (!voterInput.getPassword().equals(voterInput.getPasswordConfirm())){
-                throw new GenericOutputException("Passwords doesn't match");
+                throw new GenericOutputException("Senhas não coincidem");
             }
         } else {
             if (!isUpdate) {
-                throw new GenericOutputException("Password doesn't match");
+                throw new GenericOutputException("Senhas não podem estar vazias");
             }
         }
     }
