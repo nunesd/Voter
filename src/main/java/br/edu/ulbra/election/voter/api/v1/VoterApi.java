@@ -14,41 +14,41 @@ import java.util.List;
 @RequestMapping("/v1/voter")
 public class VoterApi {
 
-    private final VoterService voterService;
+	private final VoterService voterService;
 
-    @Autowired
-    public VoterApi(VoterService voterService){
-        this.voterService = voterService;
-    }
+	@Autowired
+	public VoterApi(VoterService voterService) {
+		this.voterService = voterService;
+	}
 
-    @GetMapping("/")
-    @ApiOperation(value = "Get voters List")
-    public List<VoterOutput> getAll(){
-        return voterService.getAll();
-    }
+	@GetMapping("/")
+	@ApiOperation(value = "Get voters List")
+	public List<VoterOutput> getAll() {
+		return voterService.getAll();
+	}
 
-    @GetMapping("/{voterId}")
-    @ApiOperation(value = "Get voter by Id")
-    public VoterOutput getById(@PathVariable(name="voterId") Long voterId){
-        return voterService.getById(voterId);
-    }
+	@GetMapping("/{voterId}")
+	@ApiOperation(value = "Get voter by Id")
+	public VoterOutput getById(@PathVariable(name = "voterId") Long voterId) {
+		return voterService.getById(voterId);
+	}
 
-    @PostMapping("/")
-    @ApiOperation(value = "Create new voter")
-    public VoterOutput create(@RequestBody VoterInput voterInput){
-        return voterService.create(voterInput);
-    }
+	@PostMapping("/")
+	@ApiOperation(value = "Create new voter")
+	public VoterOutput create(@RequestBody VoterInput voterInput) {
+		return voterService.create(voterInput);
+	}
 
-    @PutMapping("/{voterId}")
-    @ApiOperation(value = "Update voter")
-    public VoterOutput update(@PathVariable Long voterId, @RequestBody VoterInput voterInput){
-        return voterService.update(voterId, voterInput);
-    }
+	@PutMapping("/{voterId}")
+	@ApiOperation(value = "Update voter")
+	public VoterOutput update(@PathVariable Long voterId, @RequestBody VoterInput voterInput) {
+		return voterService.update(voterId, voterInput);
+	}
 
-    @DeleteMapping("/{voterId}")
-    @ApiOperation(value = "Delete voter")
-    public GenericOutput delete(@PathVariable Long voterId){
-        return voterService.delete(voterId);
-    }
+	@DeleteMapping("/{voterId}")
+	@ApiOperation(value = "Delete voter")
+	public GenericOutput delete(@PathVariable Long voterId) {
+		return voterService.delete(voterId);
+	}
 
 }
