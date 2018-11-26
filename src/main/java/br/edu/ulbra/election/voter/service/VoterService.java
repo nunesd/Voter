@@ -1,11 +1,15 @@
 package br.edu.ulbra.election.voter.service;
 
+import br.edu.ulbra.election.voter.client.VoteClientService;
 import br.edu.ulbra.election.voter.exception.GenericOutputException;
 import br.edu.ulbra.election.voter.input.v1.VoterInput;
 import br.edu.ulbra.election.voter.model.Voter;
 import br.edu.ulbra.election.voter.output.v1.GenericOutput;
+import br.edu.ulbra.election.voter.output.v1.VoteOutput;
 import br.edu.ulbra.election.voter.output.v1.VoterOutput;
 import br.edu.ulbra.election.voter.repository.VoterRepository;
+import feign.FeignException;
+
 import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -28,15 +32,18 @@ public class VoterService {
     private final ModelMapper modelMapper;
 
     private final PasswordEncoder passwordEncoder;
+    
+    private final VoteClientService voteClientService;
 
     private static final String MESSAGE_INVALID_ID = "Invalid id";
     private static final String MESSAGE_VOTER_NOT_FOUND = "Voter not found";
 
     @Autowired
-    public VoterService(VoterRepository voterRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder){
+    public VoterService(VoterRepository voterRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder, VoteClientService voteClientService){
         this.voterRepository = voterRepository;
         this.modelMapper = modelMapper;
         this.passwordEncoder = passwordEncoder;
+        this.voteClientService = voteClientService;
     }
 
     public List<VoterOutput> getAll(){
@@ -105,13 +112,25 @@ public class VoterService {
         if (voter == null){
             throw new GenericOutputException(MESSAGE_VOTER_NOT_FOUND);
         }
-
+        
+        try {
+            List<VoteOutput> votes = voteClientService.getByVoterId(voterId);
+            if (votes.size() > 0) {
+            	throw new GenericOutputException("This voter already voted!");
+            }
+        } catch (FeignException e) {
+        	if (e.status() == 500) {
+                throw new GenericOutputException(MESSAGE_VOTER_NOT_FOUND);
+            }
+        }
+           
         voterRepository.delete(voter);
 
         return new GenericOutput("Voter deleted");
     }
 
     private void validateInput(VoterInput voterInput, boolean isUpdate){
+    	
         List<VoterOutput> allVotters = this.getAll();
         
         if(!isUpdate) {
@@ -134,7 +153,7 @@ public class VoterService {
         }
         
         if (StringUtils.isBlank(voterInput.getEmail())){
-            throw new GenericOutputException("Em-mail inválido");
+            throw new GenericOutputException("E-mail inválido");
         }
         if (StringUtils.isBlank(voterInput.getName())){
             throw new GenericOutputException("Nome Inválido");
