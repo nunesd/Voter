@@ -46,7 +46,7 @@ public class VoterService {
 	public VoterOutput create(VoterInput voterInput) {
 		validateInput(voterInput, false, voterRepository);
 		Voter voter = modelMapper.map(voterInput, Voter.class);
-		voter.setPassword(Voter.getHashPassword(voter.getPassword()));
+		voter.setPassword(passwordEncoder.encode(voter.getPassword()));
 		voter = voterRepository.save(voter);
 		return modelMapper.map(voter, VoterOutput.class);
 	}
